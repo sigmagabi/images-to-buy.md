@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FotoMarket Pro - Versiune Corectată</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding-bottom: 50px; }
+        .nav { background: #2c3e50; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        
+        .container { padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        
+        .card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: pointer; transition: 0.3s; }
+        .card:hover { transform: translateY(-5px); }
+        .card img { width: 100%; height: 200px; object-fit: cover; }
+        .card-info { padding: 15px; }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
+        .modal-content { background: white; margin: 5% auto; padding: 20px; width: 90%; max-width: 500px; border-radius: 10px; position: relative; }
+        .close { position: absolute; right: 20px; top: 10px; font-size: 28px; cursor: pointer; }
+
+        .upload-form { background: white; padding: 20px; margin: 20px auto; max-width: 800px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .upload-form input { display: block; width: 95%; margin-bottom: 10px; padding: 8px; }
+        .upload-form button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="nav">
+    <h2>FotoMarket</h2>
+    <div id="user-section">
+        <input type="text" id="username" placeholder="Username">
+        <button onclick="login()">Logare</button>
+    </div>
+</div>
+
+<div id="form-container"></div>
+
+<div class="container" id="main-gallery"></div>
+
+<div id="myModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <div id="modal-details"></div>
+    </div>
+</div>
+
+<script>
+    let currentUser = "";
+    // Încărcăm anunțurile salvate din localStorage la deschiderea paginii
+    let ads = JSON.parse(localStorage.getItem('fotoMarketAds')) || [];
+
+    // Afișăm anunțurile existente imediat
+    window.onload = displayAds;
+
+    function login() {
+        const userInp = document.getElementById('username').value;
+        if(userInp) {
+            currentUser = userInp;
+            document.getElementById('user-section').innerHTML = `Salut, <b>${currentUser}</b>! <button onclick="logout()">Logout</button>`;
+            showUploadForm();
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('currentUser'); // Opțional
+        location.reload();
+    }
+
+    function showUploadForm() {
+        const formHtml = `
+            <div class="upload-form">
+                <h3>Vinde o poză</h3>
+                <input type="text" id="pName" placeholder="Nume produs (Ex: Aparat foto)">
+                <input type="text" id="pPhone" placeholder="Nr. Telefon (Ex: 07xx...)">
+                <input type="file" id="pImg" accept="image/*">
+                <button onclick="uploadItem()">Postează Anunț</button>
+            </div>
+        `;
+        document.getElementById('form-container').innerHTML = formHtml;
+    }
+
+    function uploadItem() {
+        const name = document.getElementById('pName').value;
+        const phone = document.getElementById('pPhone').value;
+        const fileInput = document.getElementById('pImg');
+        const file = fileInput.files[0];
+
+        if (!name || !phone || !file) {
+            alert("Te rugăm să completezi toate câmpurile!");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const newAd = {
+                id: Date.now(),
+                title: name,
+                seller: currentUser,
+                contact: phone,
+                image: e.target.result // Salvăm imaginea ca Base64
+            };
+
+            ads.push(newAd);
+            localStorage.setItem('fotoMarketAds', JSON.stringify(ads)); // Salvare permanentă în browser
+            displayAds();
+            
+            // Resetăm formularul
+            document.getElementById('pName').value = "";
+            document.getElementById('pPhone').value = "";
+            fileInput.value = "";
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function displayAds() {
+        const gallery = document.getElementById('main-gallery');
+        gallery.innerHTML = ""; // Curățăm galeria înainte de reafisare
+
+        ads.forEach(ad => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.onclick = () => showDetails(ad);
+            card.innerHTML = `
+                <img src="${ad.image}">
+                <div class="card-info">
+                    <h3>${ad.title}</h3>
+                    <p>Vânzător: ${ad.seller}</p>
+                </div>
+            `;
+            gallery.appendChild(card);
+        });
+    }
+
+    function showDetails(ad) {
+        const modal = document.getElementById('myModal');
+        const details = document.getElementById('modal-details');
+        details.innerHTML = `
+            <img src="${ad.image}" style="width:100%; border-radius:10px; max-height:300px; object-fit:contain; background:#eee;">
+            <h2>${ad.title}</h2>
+            <p><b>Vânzător:</b> ${ad.seller}</p>
+            <p><b>Contact:</b> ${ad.contact}</p>
+            <button style="background: #27ae60; color: white; padding: 12px; border: none; width: 100%; border-radius:5px; font-size:16px; cursor:pointer;">Cumpără acum</button>
+            <button onclick="deleteAd(${ad.id})" style="background: #e74c3c; color: white; margin-top:10px; padding: 5px; border: none; width: 100%; border-radius:5px; cursor:pointer; font-size:12px;">Șterge Anunțul Meu</button>
+        `;
+        modal.style.display = "block";
+    }
+
+    function deleteAd(id) {
+        if(confirm("Ștergi acest anunț?")) {
+            ads = ads.filter(a => a.id !== id);
+            localStorage.setItem('fotoMarketAds', JSON.stringify(ads));
+            displayAds();
+            closeModal();
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('myModal').style.display = "none";
+    }
+
+    // Închide modalul dacă se apasă în afara lui
+    window.onclick = function(event) {
+        const modal = document.getElementById('myModal');
+        if (event.target == modal) closeModal();
+    }
+</script>
+</body>
+</html>
