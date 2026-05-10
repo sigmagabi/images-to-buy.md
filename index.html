@@ -24,11 +24,18 @@
 
 <div class="upload-section">
     <h3>Postează un Anunț Nou</h3>
-    <input type="text" id="itemName" placeholder="Ce vinzi?">
-    <input type="file" id="itemImg" accept="image/*">
-    <button onclick="saveToLocal()">Postează Anunțul</button>
+    <form action="https://api.web3forms.com/submit" method="POST">
+        <input type="hidden" name="access_key" value="a4238d38-d690-4862-aaf0-f0e07fdf3976">
+        
+        <input type="text" name="nume_produs" placeholder="Ce vinzi? (ex: Poze munte)" required>
+        <input type="number" name="pret" placeholder="Preț (lei)" required style="display: block; margin: 10px auto; padding: 8px; width: 80%;">
+        <input type="text" name="telefon" placeholder="Numărul tău de telefon" required style="display: block; margin: 10px auto; padding: 8px; width: 80%;">
+        
+        <p style="font-size: 12px; color: #666;">Notă: Datele vor fi trimise pe email.</p>
+        
+        <button type="submit">Trimite Anunțul</button>
+    </form>
 </div>
-
 <div class="container" id="gallery"></div>
 
 <script>
